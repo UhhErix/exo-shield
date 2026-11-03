@@ -60,6 +60,15 @@ manifest.description = "Exo Browser's blocker: uBlock Origin Lite's filters with
 manifest.author = "Exo Browser, from uBlock Origin Lite by Raymond Hill";
 const resources = manifest.declarative_net_request.rule_resources;
 for (const r of resources) if (ON.has(r.id)) r.enabled = true;
+
+// Apple's sign-in comes back to authorize.music.apple.com with a query MusicKit is handed. Stripped, its window closes
+// "signed in" and the player stays signed out (Exo Launcher's Apple Music), so these lists leave Apple's addresses alone.
+const trackingRules = new URL(resources.find((r) => r.id === "adguard-spyware-url").path, out);
+const appleOut = (list) => list.filter((host) => host !== "apple.com" && host !== "music.apple.com");
+writeFileSync(trackingRules, "[\n" + JSON.parse(readFileSync(trackingRules, "utf8")).map((rule) => {
+  if (rule.action?.type === "redirect" && rule.condition?.requestDomains) rule.condition.requestDomains = appleOut(rule.condition.requestDomains);
+  return JSON.stringify(rule);
+}).join(",\n") + "\n]\n");
 resources.splice(4, 0, { id: "hagezi-pro", enabled: true, path: "hagezi-pro.json" });
 // Built in and always at its strongest, with nothing to set: no popup, no settings page, no picker or
 // zapper shortcuts (the browser also refuses to open its pages, turn it off or remove it).
